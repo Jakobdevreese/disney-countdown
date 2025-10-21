@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Countdown naar Disneyland Parijs 🎢✨</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#ffd166">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="wrap">
+    <h1>Vertrek naar Disneyland Parijs 🎢✨</h1>
+    <p class="subtitle">We vertrekken om <strong>04:30</strong> op <strong>31 oktober</strong>!</p>
+
+    <section id="timer" aria-live="polite">
+      <div class="timebox"><span id="days">0</span><label>Dagen</label></div>
+      <div class="timebox"><span id="hours">0</span><label>Uren</label></div>
+      <div class="timebox"><span id="mins">0</span><label>Minuten</label></div>
+      <div class="timebox"><span id="secs">0</span><label>Seconden</label></div>
+    </section>
+
+    <div class="cta">
+      <button id="shareBtn">Deel met familie</button>
+      <button id="fullscreenBtn">Volledig scherm</button>
+      <button id="castHintBtn">Casten?</button>
+    </div>
+
+    <p class="hint">Tip: in Chrome/Edge kan je via het menu <em>Casten</em> de pagina naar een tv sturen (Chromecast/Android TV).</p>
+  </main>
+
+  <!-- Confetti -->
+  <canvas id="confetti-canvas"></canvas>
+
+  <script>
+    // === Config ===
+    // Doel: 31 okt 2025 04:30 Europe/Brussels
+    // (Indien je het jaar wil aanpassen, doe dat hieronder)
+    const target = new Date("2025-10-31T04:30:00+01:00"); // CET eind okt (na zomertijd)
+    // Opmerking: Als je absolute zekerheid wil rond tijdzone, kan je ook:
+    // const target = new Date("2025-10-31T03:30:00Z"); // 04:30 Brussels ~ CET (Z = UTC)
+
+    const $d = document.getElementById("days");
+    const $h = document.getElementById("hours");
+    const $m = document.getElementById("mins");
+    const $s = document.getElementById("secs");
+
+    let done = false;
+
+    function tick() {
+      const now = new Date().getTime();
+      const diff = target.getTime() - now;
+
+      if (diff <= 0 && !done) {
+        done = true;
+        $d.textContent = 0; $h.textContent = 0; $m.textContent = 0; $s.textContent = 0;
+        celebrate();
+        return;
+      }
+      if (diff > 0) {
+        const days = Math.floor(diff / 86400000);
+        const hours = Math.floor((diff % 86400000) / 3600000);
+        const mins = Math.floor((diff % 3600000) / 60000);
+        const secs = Math.floor((diff % 60000) / 1000);
+        $d.textContent = days;
+        $h.textContent = hours.toString().padStart(2, "0");
+        $m.textContent = mins.toString().padStart(2, "0");
+        $s.textContent = secs.toString().padStart(2, "0");
+      }
+    }
+    setInterval(tick, 1000);
+    tick();
+
+    // Delen (web share)
+    document.getElementById("shareBtn").addEventListener("click", async () => {
+      const url = window.location.href;
+      const text = "Onze gezins-countdown naar Disneyland Parijs! 🎢✨";
+      try {
+        if (navigator.share) {
+          await navigator.share({ title: document.title, text, url });
+        } else {
+          await navigator.clipboard.writeText(url);
+          alert("Link gekopieerd! 📋");
+        }
+      } catch {}
+    });
+
+    // Volledig scherm (handig voor tv)
+    document.getElementById("fullscreenBtn").addEventListener("click", async () => {
+      if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        await document.exitFullscreen().catch(() => {});
+      }
+    });
+
+    // Casting hint
+    document.getElementById("castHintBtn").addEventListener("click", () => {
+      alert("Open het browsermenu (⋮) > 'Casten' om naar je tv te streamen. Werkt met Chromecast/Android TV.");
+    });
+
+    // Simpele confetti
+    // Bron: mini-implementatie zonder lib (lichtgewicht)
+    const canvas = document.getElementById("confetti-canvas");
+    const ctx = canvas.getContext("2d");
+    let confetti, w, h, rafId;
+    function resize() {
+      w = canvas.width = window.innerWidth;
+      h = canvas.height = window.innerHeight;
+    }
+    window.addEventListener("resize", resize);
+    resize();
+
+    function makeConfetti(n=180) {
+      const arr = [];
+      for (let i=0;i<n;i++){
+        arr.push({
+          x: Math.random()*w,
+          y: Math.random()*-h,
+          r: 3+Math.random()*5,
+          vy: 2+Math.random()*4,
+          vx: -2+Math.random()*4,
+          rot: Math.random()*Math.PI,
+          vr: -0.1+Math.random()*0.2
+        });
+      }
+      return arr;
+    }
+
+    function drawConfetti() {
+      ctx.clearRect(0,0,w,h);
+      for (const p of confetti) {
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rot);
+        ctx.fillStyle = `hsl(${(p.y/3)%360},100%,60%)`;
+        ctx.fillRect(-p.r, -p.r, p.r*2, p.r*2);
+        ctx.restore();
+
+        p.x += p.vx;
+        p.y += p.vy;
+        p.rot += p.vr;
+        if (p.y > h + 20) {
+          p.y = -20;
+          p.x = Math.random()*w;
+        }
+      }
+      rafId = requestAnimationFrame(drawConfetti);
+    }
+
+    function celebrate() {
+      confetti = makeConfetti();
+      drawConfetti();
+      setTimeout(()=> cancelAnimationFrame(rafId), 15000);
+    }
+  </script>
+</body>
+</html>
